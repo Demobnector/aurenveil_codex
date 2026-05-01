@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Adventurer Registry</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif}
+body{background:#f0f2f5;transition:background 0.2s, color 0.2s; overflow:hidden; height:100vh; padding:8px}
+.registry{display:flex;height:calc(100vh - 16px);border-radius:12px;overflow:hidden;background:#fff;border:1px solid #ccc}
+.sidebar{width:240px;min-width:240px;background:#f5f5f5;border-right:1px solid #ddd;display:flex;flex-direction:column;height:100%;overflow:hidden}
+.sidebar-title{padding:10px 12px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid #ddd;background:#ececec;flex-shrink:0}
+.category-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#ececec;border-bottom:1px solid #ddd;flex-shrink:0}
+.nav-links{display:flex;gap:16px}
+.nav-link{text-decoration:none;font-size:12px;font-weight:600;color:#888;padding:4px 8px;border-radius:6px;transition:all 0.2s}
+.nav-link:hover{background:#ddd;color:#555}
+.nav-link.active{color:#222;background:#fff}
+.theme-toggle{background:none;border:none;font-size:14px;cursor:pointer;padding:4px 4px;border-radius:6px}
+.theme-toggle:hover{background:#ddd}
+/* Entry list scrolls independently */
+.entry-list{flex:1;overflow-y:auto;overflow-x:hidden}
+.cat-header{padding:10px 12px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.07em;background:#ececec;border-bottom:1px solid #ddd;cursor:pointer;transition:background 0.12s}
+.cat-header:hover{background:#e0e0e0}
+.entry{display:flex;align-items:center;gap:9px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #e8e8e8;transition:background 0.12s;border-left:3px solid transparent}
+.entry:hover{background:#eaeaea}
+.entry.active{background:#fff;border-left-color:#555}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.ename{font-size:12px;font-weight:600;color:#222;line-height:1.2}
+.erank{font-size:10px;color:#999;margin-top:1px}
+.party-name{font-size:9px;color:#888;margin-left:5px;font-weight:400}
+/* Detail panel scrolls independently */
+.detail{flex:1;overflow-y:auto;background:#fff;display:flex;flex-direction:column}
+.placeholder{height:100%;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:13px;text-align:center;padding:20px}
+.dossier{padding:18px 20px}
+.dos-top{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #eee;flex-wrap:wrap}
+.dos-avatar{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;flex-shrink:0;border:2px solid #eee}
+.dos-name{font-size:22px;font-weight:700;color:#111;line-height:1.1}
+.dos-title{font-size:12px;color:#888;margin-top:3px;font-style:italic}
+.dos-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.badge{font-size:10px;font-weight:700;padding:2px 10px;border-radius:999px;border:1px solid}
+.b-silver{background:#e8e8e2;color:#3a3a38;border-color:#c0bdb0}
+.b-gold{background:#FEF3DC;color:#6b3d00;border-color:#f0c870}
+.b-diamond{background:#eeeefe;color:#2c248a;border-color:#b0aaf0}
+.b-approx{background:#f0e8fe;color:#4a1d8a;border-color:#c0a0f0}
+.b-role{background:#f0f0f0;color:#555;border-color:#ddd}
+.b-party{background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7}
+.b-solo{background:#e3f2fd;color:#0d47a1;border-color:#90caf9}
+.b-independent{background:#fce4ec;color:#880e4f;border-color:#f48fb1}
+.b-civilian{background:#fff8e1;color:#8a5c00;border-color:#ffe082}
+.b-faction{background:#ede7f6;color:#4527a0;border-color:#b39ddb}
+.section{margin-bottom:16px}
+.sec-title{font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #f0f0f0}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.info-item{background:#f9f9f9;border:1px solid #eee;border-radius:7px;padding:7px 9px}
+.info-label{font-size:9px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px}
+.info-val{font-size:12px;font-weight:600;color:#333}
+.prose{font-size:12px;color:#555;line-height:1.7}
+.prose p{margin-bottom:6px}
+.equip-item{display:flex;gap:8px;margin-bottom:7px;align-items:flex-start}
+.equip-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.equip-name{font-size:12px;font-weight:600;color:#333}
+.equip-note{font-size:11px;color:#777;line-height:1.5}
+.ability-block{margin-bottom:10px}
+.ab-category{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.pills{display:flex;flex-wrap:wrap;gap:4px}
+.pill{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid}
+.pill-heal{background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7}
+.pill-buff{background:#e3f2fd;color:#0d47a1;border-color:#90caf9}
+.pill-off{background:#fff0ee;color:#c0391b;border-color:#f5b0a0}
+.pill-def{background:#f3e5f5;color:#4a148c;border-color:#ce93d8}
+.pill-pass{background:#fff8e1;color:#8a5c00;border-color:#ffe082}
+.sig-box{background:#1a1a2e;color:#e8e8f8;border-radius:8px;padding:10px 12px;margin-top:6px}
+.sig-name{font-size:12px;font-weight:700;color:#c8b8ff;margin-bottom:4px}
+.sig-desc{font-size:11px;color:#b0b0d0;line-height:1.6}
+.str-row{display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;font-size:12px;color:#444}
+.str-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.dot-green{background:#4caf50}
+.dot-red{background:#f44336}
+.dot-blue{background:#2196f3}
+.dot-orange{background:#ff9800}
+.team-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:7px 9px;background:#f9f9f9;border:1px solid #eee;border-radius:7px}
+.team-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.team-name{font-size:12px;font-weight:600;color:#222}
+.team-rel{font-size:11px;color:#888}
+.misc-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.misc-item{background:#f9f9f9;border:1px solid #eee;border-radius:7px;padding:6px 9px}
+.misc-label{font-size:9px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px}
+.misc-val{font-size:11px;color:#555;line-height:1.5}
+.feat-item{display:flex;gap:7px;margin-bottom:5px;font-size:12px;color:#444;align-items:flex-start}
+.feat-star{color:#f9a825;flex-shrink:0}
+.rep-box{background:#f9f9f9;border:1px solid #eee;border-radius:7px;padding:9px 11px;font-size:12px;color:#555;line-height:1.6}
+.divider{height:1px;background:#f0f0f0;margin:14px 0}
+.stats-grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;margin-top:6px}
+.srow2{display:flex;flex-direction:column;gap:2px}
+.slbl2{font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:0.04em}
+.bline2{display:flex;align-items:center;gap:5px}
+.btrack2{flex:1;height:5px;background:#eee;border-radius:3px;overflow:hidden}
+.bfill2{height:100%;border-radius:3px}
+.sval2{font-size:11px;font-weight:700;color:#333;min-width:42px;text-align:right}
+.rank-scale{font-size:10px;color:#ccc;font-weight:700;margin-bottom:6px}
+.power-btn{background:#2a4a4a;color:white;border:none;border-radius:999px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;margin-left:10px;transition:background 0.2s}
+.power-btn:hover{background:#3a6a6a}
+.power-panel{margin-top:10px;padding:10px;background:#1a2a2e;border-radius:8px;color:#c8e0e0;font-size:11px;border-left:3px solid #59b69b}
+.power-panel h4{margin:0 0 5px 0;font-size:11px}
+.variant-tabs{display:flex;border-bottom:1px solid #ddd;background:#fafafa;flex-shrink:0;flex-wrap:wrap}
+.vtab{flex:1;min-width:65px;padding:7px 4px;font-size:11px;font-weight:600;color:#999;cursor:pointer;text-align:center;border-bottom:2px solid transparent;border-right:1px solid #eee}
+.vtab:last-child{border-right:none}
+.vtab:hover{background:#f0f0f0;color:#555}
+.vtab.active{color:#222;border-bottom-color:#555;background:#fff}
+/* Rank badges for sidebar entries */
+.rank-badge-small {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 8px;
+  letter-spacing: 0.02em;
+}
+.rank-copper { background: #cd7f32; color: #2a1a0a; }
+.rank-iron { background: #a0a0a0; color: #1a1a1a; }
+.rank-silver { background: #c0c0c0; color: #1a1a1a; }
+.rank-gold { background: #ffd700; color: #3a2a00; }
+.rank-diamond { background: #b0e0e6; color: #1a3a4a; }
+.rank-mythril { background: #d0d0e8; color: #2a2a4a; }
+.rank-approx { background: #e0d0f0; color: #3a2a5a; }
+
+/* Dark mode rank badges */
+body.dark .rank-copper { background: #cd7f32; color: #1a0a00; }
+body.dark .rank-iron { background: #909090; color: #0a0a0a; }
+body.dark .rank-silver { background: #b0b0b0; color: #0a0a0a; }
+body.dark .rank-gold { background: #e6c200; color: #1a1500; }
+body.dark .rank-diamond { background: #8ac4d0; color: #0a1a2a; }
+body.dark .rank-mythril { background: #b0b0d0; color: #151530; }
+body.dark .rank-approx { background: #c0b0e0; color: #201540; }
+/* Dark mode overrides */
+body.dark{background:#0a0c10}
+body.dark .registry{background:#12161c;border-color:#2a2e3a}
+body.dark .sidebar{background:#1a1e26;border-right-color:#2a2e3a}
+body.dark .sidebar-title{background:#151a22;border-bottom-color:#2a2e3a;color:#9aa3b8}
+body.dark .category-bar{background:#151a22;border-bottom-color:#2a2e3a}
+body.dark .cat-header{background:#151a22;color:#9aa3b8;border-bottom-color:#2a2e3a}
+body.dark .cat-header:hover{background:#1f2530}
+body.dark .entry{background:transparent;border-bottom-color:#232730}
+body.dark .entry:hover{background:#23282f}
+body.dark .entry.active{background:#12161c;border-left-color:#8c9eff}
+body.dark .ename{color:#eef2ff}
+body.dark .erank{color:#7e8aa2}
+body.dark .detail{background:#12161c}
+body.dark .placeholder{color:#5a627a}
+body.dark .dossier{background:#12161c}
+body.dark .dos-name{color:#eef2ff}
+body.dark .dos-title{color:#8c96b0}
+body.dark .info-item{background:#1a1e28;border-color:#2a2e3a}
+body.dark .info-label{color:#7e8aa2}
+body.dark .info-val{color:#eef2ff}
+body.dark .prose{color:#bdc3db}
+body.dark .equip-name{color:#eef2ff}
+body.dark .equip-note{color:#9aa3b8}
+body.dark .ab-category{color:#7e8aa2}
+body.dark .pill{background:#2a2e3a;border-color:#4a5070;color:#bdc3db}
+body.dark .sig-box{background:#0d0d1a}
+body.dark .str-row{color:#bdc3db}
+body.dark .team-item{background:#1a1e28;border-color:#2a2e3a}
+body.dark .team-name{color:#eef2ff}
+body.dark .team-rel{color:#9aa3b8}
+body.dark .misc-item{background:#1a1e28;border-color:#2a2e3a}
+body.dark .misc-val{color:#bdc3db}
+body.dark .rep-box{background:#1a1e28;border-color:#2a2e3a;color:#bdc3db}
+body.dark .nav-link{color:#9aa3b8}
+body.dark .nav-link:hover{background:#2a2e3a;color:#eef2ff}
+body.dark .nav-link.active{background:#12161c;color:#eef2ff}
+body.dark .theme-toggle{color:#eef2ff}
+body.dark .theme-toggle:hover{background:#2a2e3a}
+body.dark .stats-grid2 .slbl2{color:#7e8aa2}
+body.dark .stats-grid2 .sval2{color:#eef2ff}
+body.dark .btrack2{background:#2a2e3a}
+body.dark .rank-scale{color:#5a627a}
+body.dark .variant-tabs{background:#151a22;border-bottom-color:#2a2e3a}
+body.dark .vtab{color:#8c96b0;border-right-color:#2a2e3a}
+body.dark .vtab:hover{background:#1f2530;color:#cbd5ff}
+body.dark .vtab.active{color:#eef2ff;border-bottom-color:#8c9eff;background:#12161c}
+body.dark .power-panel{background:#0d1a1e}
+/* Print styles */
+@media print {
+  .category-bar, .nav-links, .theme-toggle, .power-btn, .variant-tabs, .threat-btn, .sorting-bar, .print-char-btn, .print-party-btn {
+    display: none !important;
+  }
+  .print-character { page-break-after: always; }
+  .print-character:last-child { page-break-after: auto; }
+}
+</style>
+</head>
+<body>
+<div class="registry">
+  <div class="sidebar">
+	  <div class="sidebar-title">Adventurer Registry</div>
+	  <div id="list" class="entry-list"></div>
+	</div>
+  <div class="detail" id="detail">
+    <div class="placeholder">← Select an adventurer or party</div>
+  </div>
+</div>
+
+<script>
+// Registry core with Civilian and Faction support
+window.REGISTRY = (function() {
+  let allAdventurers = [];
+  let parties = [];
+  let civilians = [];
+  let factions = [];
+  let currentView = 'categories';
+  let currentCategory = null;
+  let currentParty = null;
+  let currentAdventurer = null;
+  let currentCivilian = null;
+  let currentFaction = null;
+
+  const CAPS = { Silver: 350, Gold: 550, Diamond: 800 };
+  function fmt(n) { return n >= 1000 ? n.toLocaleString() : String(n); }
+  function pct(v, cap) { return Math.min(100, Math.round(v / cap * 100)); }
+
+  // ========================
+  // PRINT FUNCTIONS
+  // ========================
+  
+  function generateCharacterHTML(character) {
+    const cap = CAPS[character.stats?.rank] || 550;
+    return `
+      <div class="print-character" style="page-break-after: always; margin-bottom: 40px;">
+        <div style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
+          <div style="font-size: 24px; font-weight: bold;">${character.name}</div>
+          <div style="font-size: 14px; color: #666;">${character.title || 'No Title'} · ${character.rankLabel || 'N/A'} · ${character.role || character.sub || 'Civilian'}</div>
+          <div style="font-size: 12px; color: #888; margin-top: 4px;">${character.basic?.Affiliation || character.affiliation || 'Adventurer\'s Guild'}</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+          <div style="background: #f5f5f5; padding: 10px; border-radius: 8px;">
+            <strong>Basic Info</strong><br>
+            Age: ${character.basic?.Age || 'Unknown'}<br>
+            Gender: ${character.basic?.Gender || 'Unknown'}<br>
+            Height: ${character.basic?.Height || 'Unknown'}<br>
+            Race: ${character.basic?.Race || 'Unknown'}
+          </div>
+          <div style="background: #f5f5f5; padding: 10px; border-radius: 8px;">
+            <strong>Stats</strong><br>
+            ${character.stats ? Object.entries(character.stats.values).map(([k, v]) => `<span style="display: inline-block; width: 45%;">${k}: ${v}</span>`).join('') : 'Civilian / Faction - No combat stats'}
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+          <strong>Background</strong>
+          <p style="margin-top: 5px; line-height: 1.5;">${character.background || character.desc || 'No background recorded.'}</p>
+        </div>
+        
+        ${character.personality ? `
+        <div style="margin-bottom: 15px;">
+          <strong>Personality</strong>
+          <p style="margin-top: 5px; line-height: 1.5;">${character.personality}</p>
+        </div>
+        ` : ''}
+        
+        ${character.equipment ? `
+        <div style="margin-bottom: 15px;">
+          <strong>Equipment / Distinctive Items</strong>
+          ${character.equipment.map(e => `<div style="margin-top: 5px;"><strong>${e.name}</strong> — ${e.note}</div>`).join('')}
+        </div>
+        ` : ''}
+        
+        ${character.strengths ? `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div>
+            <strong>Strengths</strong>
+            <ul style="margin-top: 5px;">${character.strengths.map(s => `<li>${s}</li>`).join('')}</ul>
+          </div>
+          <div>
+            <strong>Weaknesses</strong>
+            <ul style="margin-top: 5px;">${character.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul>
+          </div>
+        </div>
+        ` : ''}
+        
+        ${character.feats ? `
+        <div style="margin-top: 15px;">
+          <strong>Notable Achievements</strong>
+          <ul>${character.feats.map(f => `<li>${f}</li>`).join('')}</ul>
+        </div>
+        ` : ''}
+        
+        <div style="margin-top: 15px; font-size: 12px; color: #888; border-top: 1px solid #ddd; padding-top: 10px;">
+          Printed from Adventurer Registry | ${new Date().toLocaleString()}
+        </div>
+      </div>
+    `;
+  }
+  
+  function printAllCharacters() {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>Adventurer Registry - Complete Printout</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; background: white; }
+          .print-character { margin-bottom: 40px; page-break-after: always; }
+          .print-character:last-child { page-break-after: auto; }
+          h1 { text-align: center; margin-bottom: 20px; }
+          .section-title { font-size: 20px; margin: 30px 0 15px 0; border-bottom: 2px solid #333; }
+          @media print {
+            body { padding: 0; }
+            .print-character { page-break-after: always; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Adventurer Registry</h1>
+        <p>Complete printout - ${new Date().toLocaleString()}</p>
+    `);
+    
+    if (parties.length > 0) {
+      printWindow.document.write(`<div class="section-title">🎭 Adventuring Parties</div>`);
+      for (const party of parties) {
+        printWindow.document.write(`<h2 style="margin-top: 20px;">${party.name}</h2>`);
+        for (const member of party.members) {
+          printWindow.document.write(generateCharacterHTML(member));
+        }
+      }
+    }
+    
+    const soloMembers = allAdventurers.filter(a => a.category === 'Solo');
+    if (soloMembers.length > 0) {
+      printWindow.document.write(`<div class="section-title">⚔️ Solo Adventurers</div>`);
+      for (const solo of soloMembers) {
+        printWindow.document.write(generateCharacterHTML(solo));
+      }
+    }
+    
+    const unregisteredMembers = allAdventurers.filter(a => a.category === 'Unregistered');
+    if (unregisteredMembers.length > 0) {
+      printWindow.document.write(`<div class="section-title">❓ Notable Unregistered</div>`);
+      for (const unreg of unregisteredMembers) {
+        printWindow.document.write(generateCharacterHTML(unreg));
+      }
+    }
+    
+    if (civilians.length > 0) {
+      printWindow.document.write(`<div class="section-title">👥 Notable Civilians</div>`);
+      for (const civilian of civilians) {
+        printWindow.document.write(generateCharacterHTML(civilian));
+      }
+    }
+    
+    if (factions.length > 0) {
+      printWindow.document.write(`<div class="section-title">🏛️ Factions & Organizations</div>`);
+      for (const faction of factions) {
+        printWindow.document.write(generateCharacterHTML(faction));
+      }
+    }
+    
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+  }
+  
+  function printCurrentCharacter(character) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>${character.name} - Character Sheet</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; background: white; }
+          @media print {
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        ${generateCharacterHTML(character)}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
+  
+  function printPartyMembers(party) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>${party.name} - Party Roster</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; background: white; }
+          .print-character { margin-bottom: 40px; page-break-after: always; }
+          .print-character:last-child { page-break-after: auto; }
+          h1 { text-align: center; margin-bottom: 20px; }
+          @media print {
+            body { padding: 0; }
+            .print-character { page-break-after: always; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>${party.name}</h1>
+        <p>Printed: ${new Date().toLocaleString()}</p>
+    `);
+    for (const member of party.members) {
+      printWindow.document.write(generateCharacterHTML(member));
+    }
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+  }
+
+  function getBadgeClass(category) {
+    switch(category) {
+      case 'Parties': return 'b-party';
+      case 'Solo': return 'b-solo';
+      case 'Unregistered': return 'b-independent';
+      case 'Civilian': return 'b-civilian';
+      case 'Faction': return 'b-faction';
+      default: return 'b-solo';
+    }
+  }
+
+  function getBadgeText(category) {
+    switch(category) {
+      case 'Parties': return 'Party Member';
+      case 'Solo': return 'Solo Adventurer';
+      case 'Unregistered': return 'Unregistered';
+      case 'Civilian': return 'Civilian';
+      case 'Faction': return 'Organization';
+      default: return 'Adventurer';
+    }
+  }
+
+  function renderCivilianDetail(civilian) {
+    const panel = document.getElementById('detail');
+    const basicHTML = `<div class="info-grid">
+      <div class="info-item"><div class="info-label">Age</div><div class="info-val">${civilian.basic?.Age || 'Unknown'}</div></div>
+      <div class="info-item"><div class="info-label">Gender</div><div class="info-val">${civilian.basic?.Gender || 'Unknown'}</div></div>
+      <div class="info-item"><div class="info-label">Height</div><div class="info-val">${civilian.basic?.Height || 'Unknown'}</div></div>
+      <div class="info-item"><div class="info-label">Race</div><div class="info-val">${civilian.basic?.Race || 'Unknown'}</div></div>
+      <div class="info-item"><div class="info-label">Occupation</div><div class="info-val">${civilian.role || civilian.sub || 'Civilian'}</div></div>
+      <div class="info-item"><div class="info-label">Affiliation</div><div class="info-val">${civilian.basic?.Affiliation || civilian.affiliation || 'None'}</div></div>
+    </div>`;
+    
+    const equipHTML = (civilian.equipment || []).map(e => `<div class="equip-item"><span class="equip-icon">${e.icon}</span><div><div class="equip-name">${e.name}</div><div class="equip-note">${e.note}</div></div></div>`).join('');
+    const strHTML = (civilian.strengths || []).map(s => `<div class="str-row"><span class="str-dot dot-green"></span>${s}</div>`).join('');
+    const wkHTML = (civilian.weaknesses || []).map(w => `<div class="str-row"><span class="str-dot dot-red"></span>${w}</div>`).join('');
+    const featHTML = (civilian.feats || []).map(f => `<div class="feat-item"><span class="feat-star">★</span>${f}</div>`).join('');
+    const miscHTML = `<div class="misc-grid">${Object.entries(civilian.misc || {}).map(([k, v]) => `<div class="misc-item"><div class="misc-label">${k}</div><div class="misc-val">${v}</div></div>`).join('')}</div>`;
+    
+    panel.innerHTML = `
+      <div class="dossier">
+        <div class="dos-top" id="dosTop">
+          <div class="dos-avatar" style="background:${civilian.avBg};color:${civilian.avColor};border-color:${civilian.accentColor}">${civilian.avText}</div>
+          <div>
+            <div class="dos-name">${civilian.name}</div>
+            <div class="dos-title">${civilian.title || 'Notable Civilian'}</div>
+            <div class="dos-badges">
+              <span class="badge b-civilian">Civilian</span>
+              <span class="badge b-role">${civilian.role || civilian.sub || 'Citizen'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="section"><div class="sec-title">Basic Information</div>${basicHTML}</div>
+        <div class="divider"></div>
+        <div class="section"><div class="sec-title">Appearance</div><div class="prose"><p>${civilian.appearance}</p></div></div>
+        <div class="section"><div class="sec-title">Personality</div><div class="prose"><p>${civilian.personality}</p></div></div>
+        <div class="section"><div class="sec-title">Background</div><div class="prose"><p>${civilian.background}</p></div></div>
+        <div class="divider"></div>
+        ${equipHTML ? `<div class="section"><div class="sec-title">Notable Possessions</div>${equipHTML}</div>` : ''}
+        <div class="section"><div class="sec-title">Profile</div>
+          <div style="margin-bottom:8px"><div class="ab-category">Strengths / Reputation</div>${strHTML}</div>
+          <div style="margin-bottom:8px"><div class="ab-category">Weaknesses / Limitations</div>${wkHTML}</div>
+          ${featHTML ? `<div><div class="ab-category">Notable Achievements</div>${featHTML}</div>` : ''}
+        </div>
+        <div class="section"><div class="sec-title">Public Perception</div><div class="rep-box">${civilian.reputation}</div>${civilian.nickname ? `<div style="margin-top:6px;font-size:12px;color:#666"><strong>Known As:</strong> ${civilian.nickname}</div>` : ''}</div>
+        <div class="section"><div class="sec-title">Miscellaneous</div>${miscHTML}</div>
+      </div>
+    `;
+    
+    const dosTop = document.getElementById('dosTop');
+    if (dosTop && !document.querySelector('.print-char-btn')) {
+      const printBtn = document.createElement('button');
+      printBtn.className = 'power-btn print-char-btn';
+      printBtn.textContent = '🖨️ Print Civilian Record';
+      printBtn.style.background = '#4a4a6a';
+      printBtn.onclick = () => printCurrentCharacter(civilian);
+      dosTop.appendChild(printBtn);
+    }
+  }
+
+    function renderFactionDetail(faction) {
+    const panel = document.getElementById('detail');
+    
+    // Build members list with clickable links if members have IDs
+    let membersHTML = '';
+    if (faction.members && faction.members.length > 0) {
+      const memberItems = faction.members.map(m => {
+        // Check if this member exists in our data (has an ID that matches a registered character)
+        const isClickable = m.id && (
+          allAdventurers.some(a => a.id === m.id) ||
+          parties.some(p => p.id === m.id) ||
+          civilians.some(c => c.id === m.id) ||
+          factions.some(f => f.id === m.id)
+        );
+        
+        if (isClickable) {
+          // Create clickable member entry
+          return `
+            <div class="entry" style="margin-bottom: 6px; border-left-color: ${m.accentColor || '#888'}; cursor: pointer;" data-member-id="${m.id}">
+              <div class="av" style="background:${m.avBg || '#ddd'}; color:${m.avColor || '#333'}; width: 28px; height: 28px; font-size: 11px;">${m.avText || m.name.charAt(0)}</div>
+              <div>
+                <div class="ename">${m.name}</div>
+                <div class="erank">${m.role} — Click to view full profile</div>
+              </div>
+            </div>
+          `;
+        } else {
+          // Non-clickable member (no matching entry)
+          return `
+            <div class="info-item" style="margin-bottom: 6px;">
+              <div class="info-label">${m.name}</div>
+              <div class="info-val">${m.role} — ${m.note || ''}</div>
+            </div>
+          `;
+        }
+      }).join('');
+      
+      membersHTML = `
+        <div class="section">
+          <div class="sec-title">Key Members (${faction.members.length})</div>
+          <div id="factionMembersList">
+            ${memberItems}
+          </div>
+        </div>
+      `;
+    }
+    
+    panel.innerHTML = `
+      <div class="dossier">
+        <div class="dos-top">
+          <div class="dos-avatar" style="background:${faction.avBg || '#ececec'};color:${faction.avColor || '#555'}">${faction.avText || '🏛️'}</div>
+          <div>
+            <div class="dos-name">${faction.name}</div>
+            <div class="dos-title">${faction.sub || 'Organization'}</div>
+            <div class="dos-badges"><span class="badge b-faction">Faction</span></div>
+          </div>
+        </div>
+        <div class="section"><div class="sec-title">Overview</div><div class="prose"><p>${faction.desc}</p></div></div>
+        ${membersHTML}
+        <div class="section"><div class="sec-title">Significance</div><div class="rep-box">${faction.importance || 'No additional notes.'}</div></div>
+        ${faction.notes ? `<div class="section"><div class="sec-title">Additional Notes</div><div class="prose"><p>${faction.notes}</p></div></div>` : ''}
+      </div>
+    `;
+    
+    // Attach click handlers to clickable member entries
+    const memberEntries = panel.querySelectorAll('#factionMembersList .entry');
+    memberEntries.forEach(entry => {
+      entry.addEventListener('click', () => {
+        const memberId = entry.dataset.memberId;
+        // Find the member in any of our collections
+        let found = allAdventurers.find(a => a.id === memberId);
+        if (found) {
+          currentAdventurer = found;
+          currentParty = null;
+          currentCivilian = null;
+          currentFaction = null;
+          renderAdventurerDetail(found);
+          return;
+        }
+        found = parties.find(p => p.id === memberId);
+        if (found) {
+          currentParty = found;
+          currentAdventurer = null;
+          currentCivilian = null;
+          currentFaction = null;
+          renderPartyDetail(found);
+          return;
+        }
+        found = civilians.find(c => c.id === memberId);
+        if (found) {
+          currentCivilian = found;
+          currentAdventurer = null;
+          currentParty = null;
+          currentFaction = null;
+          renderCivilianDetail(found);
+          return;
+        }
+        found = factions.find(f => f.id === memberId);
+        if (found) {
+          currentFaction = found;
+          currentAdventurer = null;
+          currentParty = null;
+          currentCivilian = null;
+          renderFactionDetail(found);
+          return;
+        }
+      });
+    });
+  }
+
+  // Existing render functions for adventurers and parties (keep as before)
+  function getAffilClassAndText(category) {
+    if (category === 'Parties') return { cls: 'b-party', text: 'Party Member' };
+    if (category === 'Solo') return { cls: 'b-solo', text: 'Solo Adventurer' };
+    if (category === 'Unregistered') return { cls: 'b-independent', text: 'Unregistered' };
+    return { cls: 'b-solo', text: 'Adventurer' };
+  }
+
+  function renderAdventurerDetail(adv) {
+    const panel = document.getElementById('detail');
+    const cap = CAPS[adv.stats?.rank] || 550;
+    const basicHTML = `<div class="info-grid">${Object.entries(adv.basic).map(([k, v]) => `<div class="info-item"><div class="info-label">${k}</div><div class="info-val">${v}</div></div>`).join('')}</div>`;
+    const statsHTML = `<div class="rank-scale">Stat ceiling for ${adv.stats.rank} rank: ${fmt(cap)}</div><div class="stats-grid2">${Object.entries(adv.stats.values).map(([k, v]) => `<div class="srow2"><span class="slbl2">${k}</span><div class="bline2"><div class="btrack2"><div class="bfill2" style="width:${pct(v, cap)}%;background:${adv.stats.bars?.[k] || '#999'}"></div></div><span class="sval2">${fmt(v)}</span></div></div>`).join('')}</div>`;
+    const equipHTML = (adv.equipment || []).map(e => `<div class="equip-item"><span class="equip-icon">${e.icon}</span><div><div class="equip-name">${e.name}</div><div class="equip-note">${e.note}</div></div></div>`).join('');
+    const abHTML = Object.entries(adv.abilities || {}).map(([cat, list]) => {
+      let pillClass = 'pill-pass';
+      if (cat.toLowerCase().includes('heal')) pillClass = 'pill-heal';
+      else if (cat.toLowerCase().includes('buff')) pillClass = 'pill-buff';
+      else if (cat.toLowerCase().includes('off') || cat.toLowerCase().includes('attack')) pillClass = 'pill-off';
+      else if (cat.toLowerCase().includes('def')) pillClass = 'pill-def';
+      return `<div class="ability-block"><div class="ab-category">${cat}</div><div class="pills">${list.map(ab => `<span class="pill ${pillClass}">${ab}</span>`).join('')}</div></div>`;
+    }).join('');
+    const sigHTML = adv.signature ? `<div class="sig-box"><div class="sig-name">${adv.signature.name}</div><div class="sig-desc">${adv.signature.desc}</div></div>` : '';
+    const strHTML = (adv.strengths || []).map(s => `<div class="str-row"><span class="str-dot dot-green"></span>${s}</div>`).join('');
+    const wkHTML = (adv.weaknesses || []).map(w => `<div class="str-row"><span class="str-dot dot-red"></span>${w}</div>`).join('');
+    const bestHTML = (adv.bestAgainst || []).map(b => `<div class="str-row"><span class="str-dot dot-blue"></span>${b}</div>`).join('');
+    const struggleHTML = (adv.struggleAgainst || []).map(b => `<div class="str-row"><span class="str-dot dot-orange"></span>${b}</div>`).join('');
+    const featHTML = (adv.feats || []).map(f => `<div class="feat-item"><span class="feat-star">★</span>${f}</div>`).join('');
+    const teamHTML = (adv.teammates && adv.teammates.length) ? adv.teammates.map(t => `<div class="team-item"><div class="team-av" style="background:${t.avBg};color:${t.avColor}">${t.avText}</div><div><div class="team-name">${t.name} <span style="font-size:10px;color:#aaa;font-weight:400">— ${t.role}</span></div><div class="team-rel">${t.rel}</div></div></div>`).join('') : '<div style="font-size:12px;color:#aaa;font-style:italic">No registered party affiliations.</div>';
+    const teamRoleHTML = adv.teamRole ? `<div style="margin-top:8px"><div class="ab-category">Role in Team</div><div class="prose" style="margin-top:4px"><p>${adv.teamRole}</p></div></div>` : '';
+    const miscHTML = `<div class="misc-grid">${Object.entries(adv.misc || {}).map(([k, v]) => `<div class="misc-item"><div class="misc-label">${k}</div><div class="misc-val">${v}</div></div>`).join('')}</div>`;
+    let rankClass = 'b-silver';
+    if (adv.rankLabel === 'Gold') rankClass = 'b-gold';
+    else if (adv.rankLabel === 'Diamond') rankClass = 'b-diamond';
+    else if (adv.rankLabel.includes('Diamond')) rankClass = 'b-diamond';
+    else if (adv.rankLabel === '~Diamond') rankClass = 'b-approx';
+    const affil = getAffilClassAndText(adv.category);
+    
+    panel.innerHTML = `
+      <div class="dossier">
+        <div class="dos-top" id="dosTop">
+          <div class="dos-avatar" style="background:${adv.avBg};color:${adv.avColor};border-color:${adv.accentColor}">${adv.avText}</div>
+          <div><div class="dos-name">${adv.name}</div><div class="dos-title">${adv.title}</div><div class="dos-badges"><span class="badge ${rankClass}">${adv.rankLabel} Rank</span><span class="badge b-role">${adv.basic.Role || adv.role}</span><span class="badge ${affil.cls}">${affil.text}</span></div></div>
+        </div>
+        <div class="section"><div class="sec-title">Basic Information</div>${basicHTML}</div>
+        <div class="section"><div class="sec-title">Statistics</div>${statsHTML}</div>
+        <div class="divider"></div>
+        <div class="section"><div class="sec-title">Appearance</div><div class="prose"><p>${adv.appearance}</p></div></div>
+        <div class="section"><div class="sec-title">Personality</div><div class="prose"><p>${adv.personality}</p></div></div>
+        <div class="section"><div class="sec-title">Background</div><div class="prose"><p>${adv.background}</p></div></div>
+        <div class="divider"></div>
+        <div class="section"><div class="sec-title">Equipment</div>${equipHTML || '<p>None noted.</p>'}</div>
+        <div class="section"><div class="sec-title">Abilities & Magic</div>${abHTML || '<p>None.</p>'}</div>
+        ${sigHTML ? `<div class="section"><div class="sec-title">Signature Ability</div>${sigHTML}</div>` : ''}
+        <div class="divider"></div>
+        <div class="section"><div class="sec-title">Combat Profile</div><div style="margin-bottom:8px"><div class="ab-category">Strengths</div>${strHTML}</div><div style="margin-bottom:8px"><div class="ab-category">Weaknesses</div>${wkHTML}</div><div><div class="ab-category">Preferred Strategy</div><div class="prose" style="margin-top:4px"><p>${adv.strategy}</p></div></div></div>
+        <div class="section"><div class="sec-title">Field Performance</div><div style="margin-bottom:8px"><div class="ab-category">Best Against</div>${bestHTML}</div><div style="margin-bottom:8px"><div class="ab-category">Struggles Against</div>${struggleHTML}</div><div><div class="ab-category">Notable Feats</div>${featHTML}</div></div>
+        <div class="section"><div class="sec-title">Team Dynamics</div>${teamHTML}${teamRoleHTML}</div>
+        <div class="section"><div class="sec-title">Public Perception</div><div class="rep-box">${adv.reputation}</div>${adv.nickname ? `<div style="margin-top:6px;font-size:12px;color:#666"><strong>Nickname/Title:</strong> ${adv.nickname}</div>` : ''}</div>
+        <div class="section"><div class="sec-title">Miscellaneous</div>${miscHTML}</div>
+      </div>
+    `;
+    
+    const dosTop = document.getElementById('dosTop');
+    if (dosTop && !document.querySelector('.print-char-btn')) {
+      const printBtn = document.createElement('button');
+      printBtn.className = 'power-btn print-char-btn';
+      printBtn.textContent = '🖨️ Print Character Sheet';
+      printBtn.style.background = '#4a4a6a';
+      printBtn.onclick = () => printCurrentCharacter(adv);
+      dosTop.appendChild(printBtn);
+    }
+  }
+
+  function renderPartyDetail(party) {
+    const panel = document.getElementById('detail');
+    const members = party.members;
+    if (!members || members.length === 0) {
+      panel.innerHTML = '<div class="placeholder">No members in this party.</div>';
+      return;
+    }
+
+    let tabsHTML = `<div class="variant-tabs" id="partyTabs">`;
+    members.forEach((member, idx) => {
+      tabsHTML += `<div class="vtab ${idx === 0 ? 'active' : ''}" data-id="${member.id}">${member.name}</div>`;
+    });
+    tabsHTML += `</div>`;
+    panel.innerHTML = tabsHTML + `<div id="partyMemberContent"></div>`;
+
+    function loadMember(memberId) {
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+        const cap = CAPS[member.stats?.rank] || 550;
+        const basicHTML = `<div class="info-grid">${Object.entries(member.basic).map(([k, v]) => `<div class="info-item"><div class="info-label">${k}</div><div class="info-val">${v}</div></div>`).join('')}</div>`;
+        const statsHTML = `<div class="rank-scale">Stat ceiling for ${member.stats.rank} rank: ${fmt(cap)}</div><div class="stats-grid2">${Object.entries(member.stats.values).map(([k, v]) => `<div class="srow2"><span class="slbl2">${k}</span><div class="bline2"><div class="btrack2"><div class="bfill2" style="width:${pct(v, cap)}%;background:${member.stats.bars?.[k] || '#999'}"></div></div><span class="sval2">${fmt(v)}</span></div></div>`).join('')}</div>`;
+        const equipHTML = (member.equipment || []).map(e => `<div class="equip-item"><span class="equip-icon">${e.icon}</span><div><div class="equip-name">${e.name}</div><div class="equip-note">${e.note}</div></div></div>`).join('');
+        const abHTML = Object.entries(member.abilities || {}).map(([cat, list]) => {
+          let pillClass = 'pill-pass';
+          if (cat.toLowerCase().includes('heal')) pillClass = 'pill-heal';
+          else if (cat.toLowerCase().includes('buff')) pillClass = 'pill-buff';
+          else if (cat.toLowerCase().includes('off') || cat.toLowerCase().includes('attack')) pillClass = 'pill-off';
+          else if (cat.toLowerCase().includes('def')) pillClass = 'pill-def';
+          return `<div class="ability-block"><div class="ab-category">${cat}</div><div class="pills">${list.map(ab => `<span class="pill ${pillClass}">${ab}</span>`).join('')}</div></div>`;
+        }).join('');
+        const sigHTML = member.signature ? `<div class="sig-box"><div class="sig-name">${member.signature.name}</div><div class="sig-desc">${member.signature.desc}</div></div>` : '';
+        const strHTML = (member.strengths || []).map(s => `<div class="str-row"><span class="str-dot dot-green"></span>${s}</div>`).join('');
+        const wkHTML = (member.weaknesses || []).map(w => `<div class="str-row"><span class="str-dot dot-red"></span>${w}</div>`).join('');
+        const bestHTML = (member.bestAgainst || []).map(b => `<div class="str-row"><span class="str-dot dot-blue"></span>${b}</div>`).join('');
+        const struggleHTML = (member.struggleAgainst || []).map(b => `<div class="str-row"><span class="str-dot dot-orange"></span>${b}</div>`).join('');
+        const featHTML = (member.feats || []).map(f => `<div class="feat-item"><span class="feat-star">★</span>${f}</div>`).join('');
+        const teamHTML = (member.teammates && member.teammates.length) ? member.teammates.map(t => `<div class="team-item"><div class="team-av" style="background:${t.avBg};color:${t.avColor}">${t.avText}</div><div><div class="team-name">${t.name} <span style="font-size:10px;color:#aaa;font-weight:400">— ${t.role}</span></div><div class="team-rel">${t.rel}</div></div></div>`).join('') : '<div style="font-size:12px;color:#aaa;font-style:italic">No registered party affiliations.</div>';
+        const teamRoleHTML = member.teamRole ? `<div style="margin-top:8px"><div class="ab-category">Role in Team</div><div class="prose" style="margin-top:4px"><p>${member.teamRole}</p></div></div>` : '';
+        const miscHTML = `<div class="misc-grid">${Object.entries(member.misc || {}).map(([k, v]) => `<div class="misc-item"><div class="misc-label">${k}</div><div class="misc-val">${v}</div></div>`).join('')}</div>`;
+        let rankClass = 'b-silver';
+        if (member.rankLabel === 'Gold') rankClass = 'b-gold';
+        else if (member.rankLabel === 'Diamond') rankClass = 'b-diamond';
+        else if (member.rankLabel.includes('Diamond')) rankClass = 'b-diamond';
+        else if (member.rankLabel === '~Diamond') rankClass = 'b-approx';
+        const affil = getAffilClassAndText(member.category || 'Parties');
+        const finalHTML = `<div class="dossier">
+          <div class="dos-top" id="partyDosTop">
+            <div class="dos-avatar" style="background:${member.avBg};color:${member.avColor};border-color:${member.accentColor}">${member.avText}</div>
+            <div><div class="dos-name">${member.name}</div><div class="dos-title">${member.title}</div><div class="dos-badges"><span class="badge ${rankClass}">${member.rankLabel} Rank</span><span class="badge b-role">${member.basic.Role || member.role}</span><span class="badge ${affil.cls}">${affil.text}</span></div></div>
+          </div>
+          <div class="section"><div class="sec-title">Basic Information</div>${basicHTML}</div>
+          <div class="section"><div class="sec-title">Statistics</div>${statsHTML}</div>
+          <div class="divider"></div>
+          <div class="section"><div class="sec-title">Appearance</div><div class="prose"><p>${member.appearance}</p></div></div>
+          <div class="section"><div class="sec-title">Personality</div><div class="prose"><p>${member.personality}</p></div></div>
+          <div class="section"><div class="sec-title">Background</div><div class="prose"><p>${member.background}</p></div></div>
+          <div class="divider"></div>
+          <div class="section"><div class="sec-title">Equipment</div>${equipHTML || '<p>None noted.</p>'}</div>
+          <div class="section"><div class="sec-title">Abilities & Magic</div>${abHTML || '<p>None.</p>'}</div>
+          ${sigHTML ? `<div class="section"><div class="sec-title">Signature Ability</div>${sigHTML}</div>` : ''}
+          <div class="divider"></div>
+          <div class="section"><div class="sec-title">Combat Profile</div><div style="margin-bottom:8px"><div class="ab-category">Strengths</div>${strHTML}</div><div style="margin-bottom:8px"><div class="ab-category">Weaknesses</div>${wkHTML}</div><div><div class="ab-category">Preferred Strategy</div><div class="prose" style="margin-top:4px"><p>${member.strategy}</p></div></div></div>
+          <div class="section"><div class="sec-title">Field Performance</div><div style="margin-bottom:8px"><div class="ab-category">Best Against</div>${bestHTML}</div><div style="margin-bottom:8px"><div class="ab-category">Struggles Against</div>${struggleHTML}</div><div><div class="ab-category">Notable Feats</div>${featHTML}</div></div>
+          <div class="section"><div class="sec-title">Team Dynamics</div>${teamHTML}${teamRoleHTML}</div>
+          <div class="section"><div class="sec-title">Public Perception</div><div class="rep-box">${member.reputation}</div>${member.nickname ? `<div style="margin-top:6px;font-size:12px;color:#666"><strong>Nickname/Title:</strong> ${member.nickname}</div>` : ''}</div>
+          <div class="section"><div class="sec-title">Miscellaneous</div>${miscHTML}</div>
+        </div>`;
+        document.getElementById('partyMemberContent').innerHTML = finalHTML;
+        
+        const partyDosTop = document.getElementById('partyDosTop');
+        if (partyDosTop && !document.querySelector('.print-char-btn')) {
+          const printMemberBtn = document.createElement('button');
+          printMemberBtn.className = 'power-btn print-char-btn';
+          printMemberBtn.textContent = '🖨️ Print This Member';
+          printMemberBtn.style.background = '#4a4a6a';
+          printMemberBtn.style.marginLeft = '10px';
+          printMemberBtn.onclick = () => printCurrentCharacter(member);
+          partyDosTop.appendChild(printMemberBtn);
+        }
+      }
+    }
+
+    const tabsContainer = document.getElementById('partyTabs');
+    if (tabsContainer) {
+      const tabs = tabsContainer.querySelectorAll('.vtab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          loadMember(tab.getAttribute('data-id'));
+        });
+      });
+    }
+    if (members.length) loadMember(members[0].id);
+    
+    setTimeout(() => {
+      const firstDosTop = document.querySelector('#partyMemberContent .dos-top');
+      if (firstDosTop && !document.querySelector('.print-party-btn')) {
+        const printPartyBtn = document.createElement('button');
+        printPartyBtn.className = 'power-btn print-party-btn';
+        printPartyBtn.textContent = '🖨️ Print Entire Party';
+        printPartyBtn.style.background = '#4a4a6a';
+        printPartyBtn.style.marginLeft = '10px';
+        printPartyBtn.onclick = () => printPartyMembers(party);
+        firstDosTop.appendChild(printPartyBtn);
+      }
+    }, 100);
+  }
+
+  function buildCategoryList(category) {
+    const container = document.getElementById('list');
+    container.innerHTML = '';
+    currentView = 'list';
+    currentCategory = category;
+
+    const backBtn = document.createElement('div');
+    backBtn.className = 'entry';
+    backBtn.style.borderLeftColor = '#888';
+    backBtn.innerHTML = `<div class="av" style="background:#ddd; color:#555">←</div><div><div class="ename">Back to Categories</div><div class="erank">Return to category view</div></div>`;
+    backBtn.onclick = () => { currentView = 'categories'; currentCategory = null; renderSidebar(); document.getElementById('detail').innerHTML = '<div class="placeholder">← Select an adventurer or party</div>'; };
+    container.appendChild(backBtn);
+
+    const catTitle = document.createElement('div');
+    catTitle.className = 'cat-header';
+    let titleText = '';
+    if (category === 'Parties') titleText = '🎭 Adventuring Parties';
+    else if (category === 'Solo') titleText = '⚔️ Solo Adventurers';
+    else if (category === 'Unregistered') titleText = '❓ Notable Unregistered';
+    else if (category === 'Civilian') titleText = '👥 Notable Civilians';
+    else if (category === 'Faction') titleText = '🏛️ Factions & Organizations';
+    catTitle.textContent = titleText;
+    container.appendChild(catTitle);
+
+    if (category === 'Parties') {
+      parties.forEach(party => {
+        const div = document.createElement('div');
+        div.className = 'entry';
+        const firstMember = party.members[0];
+        const bg = firstMember?.avBg || '#ddd';
+        const color = firstMember?.avColor || '#333';
+        const avText = party.members.length > 1 ? '🎭' : party.members[0]?.avText || 'PT';
+        div.innerHTML = `<div class="av" style="background:${bg};color:${color}">${avText}</div><div><div class="ename">${party.name} <span class="party-name">(${party.members.length} members)</span></div><div class="erank">Party</div></div>`;
+        div.style.borderLeftColor = firstMember?.accentColor || '#666';
+        div.onclick = () => {
+          document.querySelectorAll('.entry').forEach(el => el.classList.remove('active'));
+          div.classList.add('active');
+          currentParty = party;
+          currentAdventurer = null;
+          currentCivilian = null;
+          currentFaction = null;
+          currentView = 'detail';
+          renderPartyDetail(party);
+        };
+        container.appendChild(div);
+      });
+    } else if (category === 'Civilian') {
+      civilians.forEach(civilian => {
+        const div = document.createElement('div');
+        div.className = 'entry';
+        div.innerHTML = `<div class="av" style="background:${civilian.avBg};color:${civilian.avColor}">${civilian.avText}</div><div><div class="ename">${civilian.name}</div><div class="erank">${civilian.role || civilian.sub || 'Civilian'}</div></div>`;
+        div.style.borderLeftColor = civilian.accentColor || '#666';
+        div.onclick = () => {
+          document.querySelectorAll('.entry').forEach(el => el.classList.remove('active'));
+          div.classList.add('active');
+          currentCivilian = civilian;
+          currentParty = null;
+          currentAdventurer = null;
+          currentFaction = null;
+          currentView = 'detail';
+          renderCivilianDetail(civilian);
+        };
+        container.appendChild(div);
+      });
+    } else if (category === 'Faction') {
+      factions.forEach(faction => {
+        const div = document.createElement('div');
+        div.className = 'entry';
+        div.innerHTML = `<div class="av" style="background:${faction.avBg || '#ececec'};color:${faction.avColor || '#555'}">${faction.avText || '🏛️'}</div><div><div class="ename">${faction.name}</div><div class="erank">${faction.sub || 'Organization'}</div></div>`;
+        div.style.borderLeftColor = faction.accentColor || '#666';
+        div.onclick = () => {
+          document.querySelectorAll('.entry').forEach(el => el.classList.remove('active'));
+          div.classList.add('active');
+          currentFaction = faction;
+          currentParty = null;
+          currentAdventurer = null;
+          currentCivilian = null;
+          currentView = 'detail';
+          renderFactionDetail(faction);
+        };
+        container.appendChild(div);
+      });
+    } else {
+	  const members = allAdventurers.filter(a => a.category === category);
+	  members.forEach(adv => {
+		const div = document.createElement('div');
+		div.className = 'entry';
+		
+		// Determine rank badge class
+		let rankClass = 'rank-approx';
+		if (adv.rankLabel === 'Copper') rankClass = 'rank-copper';
+		else if (adv.rankLabel === 'Iron') rankClass = 'rank-iron';
+		else if (adv.rankLabel === 'Silver') rankClass = 'rank-silver';
+		else if (adv.rankLabel === 'Gold') rankClass = 'rank-gold';
+		else if (adv.rankLabel === 'Diamond') rankClass = 'rank-diamond';
+		else if (adv.rankLabel === 'Mythril') rankClass = 'rank-mythril';
+		else if (adv.rankLabel.includes('~')) rankClass = 'rank-approx';
+		
+		div.innerHTML = `
+		  <div class="av" style="background:${adv.avBg};color:${adv.avColor}">${adv.avText}</div>
+		  <div>
+			<div class="ename">${adv.name} <span class="rank-badge-small ${rankClass}">${adv.rankLabel}</span></div>
+			<div class="erank">${adv.basic.Role || adv.role || 'Adventurer'}</div>
+		  </div>
+		`;
+        div.style.borderLeftColor = adv.accentColor || '#666';
+        div.onclick = () => {
+          document.querySelectorAll('.entry').forEach(el => el.classList.remove('active'));
+          div.classList.add('active');
+          currentAdventurer = adv;
+          currentParty = null;
+          currentCivilian = null;
+          currentFaction = null;
+          currentView = 'detail';
+          renderAdventurerDetail(adv);
+        };
+        container.appendChild(div);
+      });
+    }
+  }
+
+  function renderSidebar() {
+    const container = document.getElementById('list');
+    container.innerHTML = '';
+    currentView = 'categories';
+    const categories = [
+      { key: 'Parties', label: '🎭 Adventuring Parties', count: parties.length },
+      { key: 'Solo', label: '⚔️ Solo Adventurers', count: allAdventurers.filter(a => a.category === 'Solo').length },
+      { key: 'Unregistered', label: '❓ Notable Unregistered', count: allAdventurers.filter(a => a.category === 'Unregistered').length },
+      { key: 'Civilian', label: '👥 Notable Civilians', count: civilians.length },
+      { key: 'Faction', label: '🏛️ Factions & Organizations', count: factions.length }
+    ];
+    for (const cat of categories) {
+      if (cat.count === 0) continue;
+      const header = document.createElement('div');
+      header.className = 'cat-header';
+      header.textContent = `${cat.label} (${cat.count})`;
+      header.onclick = () => buildCategoryList(cat.key);
+      container.appendChild(header);
+    }
+    if (parties.length === 0 && allAdventurers.length === 0 && civilians.length === 0 && factions.length === 0) {
+      container.innerHTML = '<div style="padding:12px;color:#999">No data loaded yet.</div>';
+    }
+  }
+
+  function registerParty(partyId, partyName, membersArray) {
+    if (parties.find(p => p.id === partyId)) return;
+    parties.push({ id: partyId, name: partyName, members: membersArray });
+    renderSidebar();
+  }
+
+  function registerAdventurer(adv) {
+    if (!adv.id || allAdventurers.find(a => a.id === adv.id)) return;
+    allAdventurers.push(adv);
+    renderSidebar();
+  }
+
+  function registerCivilian(civilian) {
+    if (!civilian.id || civilians.find(c => c.id === civilian.id)) return;
+    civilians.push(civilian);
+    renderSidebar();
+  }
+
+  function registerFaction(faction) {
+    if (!faction.id || factions.find(f => f.id === faction.id)) return;
+    factions.push(faction);
+    renderSidebar();
+  }
+
+  return { 
+    registerParty, 
+    registerAdventurer,
+    registerCivilian,
+    registerFaction,
+    printAllCharacters,
+    printCurrentCharacter,
+    printPartyMembers
+  };
+})();
+
+// Dark mode toggle + navigation + print all button
+(function() {
+  const sidebar = document.querySelector('.sidebar');
+  const bar = document.createElement('div');
+  bar.className = 'category-bar';
+  bar.innerHTML = `
+    <div class="nav-links">
+      <a href="#" class="nav-link" data-page="bestiary">📖 Bestiary</a>
+      <a href="#" class="nav-link active" data-page="registry">👥 Adventurer Registry</a>
+    </div>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <button class="theme-toggle" id="registryThemeToggle" title="Toggle dark/light mode" style="font-size: 14px; padding: 4px 4px;">🌙</button>
+      <button class="theme-toggle" id="printAllBtn" title="Print All Characters" style="font-size: 14px; padding: 4px 4px;">🖨️</button>
+    </div>
+  `;
+  sidebar.insertBefore(bar, sidebar.firstChild);
+  
+  const toggle = document.getElementById('registryThemeToggle');
+  const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+  if (savedDarkMode) { document.body.classList.add('dark'); toggle.textContent = '☀️'; }
+  else { document.body.classList.remove('dark'); toggle.textContent = '🌙'; }
+  toggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('darkMode', isDark);
+    toggle.textContent = isDark ? '☀️' : '🌙';
+  });
+  
+  const printAllBtn = document.getElementById('printAllBtn');
+  printAllBtn.addEventListener('click', () => {
+    if (window.REGISTRY && window.REGISTRY.printAllCharacters) {
+      window.REGISTRY.printAllCharacters();
+    } else {
+      alert('Print function not ready yet. Please wait for data to load.');
+    }
+  });
+  
+  const navLinks = bar.querySelectorAll('.nav-link');
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (link.dataset.page === 'bestiary') window.location.href = '../bestiary_almanac/bestiary-core.html';
+    });
+  });
+})();
+
+// Load data
+const loadConfig = {
+  party: ['blue-constellation', 'the-rhyming-reapers', 'red-wings', 'village-vanguard', 'iron-reckoning'],
+  solo: [
+	'don-montajes',
+	'vincent',
+	'delsaran',
+	'maxwell-anthor',
+	'meg-helsford',
+	'kaelen-mori',
+	'elias-vance',
+	'greg'
+  ],
+  unregistered: ['izgon', 'sven'],
+  civilian: [
+	'merrick-blackwood',
+	'garrick-stoneheart',
+	'lord-valemont',
+	'captain-croft',
+	'sister-miriam',
+	'duke-ashford',
+	'master-scholar-loren',
+	'thorne-ironside',
+	'elara-vance',
+	'ronan-blackthorn',
+	'serra-ironvein',
+	'master-lyn',
+	'lucian-vale',
+	'alistair-hummingbird'
+  ],
+  faction: ['aurenveil-council', 'adventurer-guild']
+};
+const filesToLoad = [];
+for (const [folder, names] of Object.entries(loadConfig)) {
+  for (const name of names) {
+    if (name) filesToLoad.push(`${folder}/${name}-data.js`);
+  }
+}
+let idx = 0;
+function loadNext() {
+  if (idx >= filesToLoad.length) { console.log('All registry data loaded.'); return; }
+  const script = document.createElement('script');
+  script.src = filesToLoad[idx];
+  script.onload = () => { console.log(`Loaded ${filesToLoad[idx]}`); idx++; loadNext(); };
+  script.onerror = () => console.error(`Failed to load ${filesToLoad[idx]}`);
+  document.head.appendChild(script);
+}
+loadNext();
+</script>
+</body>
+</html>
