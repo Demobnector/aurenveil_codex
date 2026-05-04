@@ -116,6 +116,7 @@ body{background:#f0f2f5;transition:background 0.2s, color 0.2s; overflow:hidden;
   margin-left: 8px;
   letter-spacing: 0.02em;
 }
+
 .rank-copper { background: #cd7f32; color: #2a1a0a; }
 .rank-iron { background: #a0a0a0; color: #1a1a1a; }
 .rank-silver { background: #c0c0c0; color: #1a1a1a; }
@@ -123,6 +124,9 @@ body{background:#f0f2f5;transition:background 0.2s, color 0.2s; overflow:hidden;
 .rank-diamond { background: #b0e0e6; color: #1a3a4a; }
 .rank-mythril { background: #d0d0e8; color: #2a2a4a; }
 .rank-approx { background: #e0d0f0; color: #3a2a5a; }
+.rank-beyond-mythril { background: linear-gradient(135deg, #c8a0e0, #a080d0, #80c0e0); color: #1a1a2e; border: 1px solid #e0c0ff; }
+.rank-gold-diamond { background: linear-gradient(135deg, #ffd700 30%, #b0e0e6 70%); color: #1a2a3a; }
+.rank-approx-diamond { background: #c8b0e0; color: #2a1a4a; }
 
 /* Dark mode rank badges */
 body.dark .rank-copper { background: #cd7f32; color: #1a0a00; }
@@ -132,6 +136,9 @@ body.dark .rank-gold { background: #e6c200; color: #1a1500; }
 body.dark .rank-diamond { background: #8ac4d0; color: #0a1a2a; }
 body.dark .rank-mythril { background: #b0b0d0; color: #151530; }
 body.dark .rank-approx { background: #c0b0e0; color: #201540; }
+body.dark .rank-beyond-mythril { background: linear-gradient(135deg, #9a6eae, #7a5a9e, #5a8aaa); color: #e0d0f0; }
+body.dark .rank-gold-diamond { background: linear-gradient(135deg, #c8a000 30%, #7aa0b0 70%); color: #e0e0e0; }
+body.dark .rank-approx-diamond { background: #8a6a9e; color: #e0d0f0; }
 /* Dark mode overrides */
 body.dark{background:#0a0c10}
 body.dark .registry{background:#12161c;border-color:#2a2e3a}
@@ -235,12 +242,15 @@ window.REGISTRY = (function() {
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
           <div style="background: #f5f5f5; padding: 10px; border-radius: 8px;">
-            <strong>Basic Info</strong><br>
-            Age: ${character.basic?.Age || 'Unknown'}<br>
-            Gender: ${character.basic?.Gender || 'Unknown'}<br>
-            Height: ${character.basic?.Height || 'Unknown'}<br>
-            Race: ${character.basic?.Race || 'Unknown'}
-          </div>
+			  <strong>Basic Info</strong><br>
+			  Age: ${character.basic?.Age || 'Unknown'}<br>
+			  Gender: ${character.basic?.Gender || 'Unknown'}<br>
+			  Height: ${character.basic?.Height || 'Unknown'}<br>
+			  Race: ${character.basic?.Race || 'Unknown'}<br>
+			  Affiliation: ${character.basic?.Affiliation || 'Unknown'}<br>
+			  Role: ${character.basic?.Role || 'Unknown'}<br>
+			  Rank: ${character.basic?.Rank || 'Unknown'}
+			</div>
           <div style="background: #f5f5f5; padding: 10px; border-radius: 8px;">
             <strong>Stats</strong><br>
             ${character.stats ? Object.entries(character.stats.values).map(([k, v]) => `<span style="display: inline-block; width: 45%;">${k}: ${v}</span>`).join('') : 'Civilian / Faction - No combat stats'}
@@ -633,11 +643,15 @@ window.REGISTRY = (function() {
     const teamHTML = (adv.teammates && adv.teammates.length) ? adv.teammates.map(t => `<div class="team-item"><div class="team-av" style="background:${t.avBg};color:${t.avColor}">${t.avText}</div><div><div class="team-name">${t.name} <span style="font-size:10px;color:#aaa;font-weight:400">— ${t.role}</span></div><div class="team-rel">${t.rel}</div></div></div>`).join('') : '<div style="font-size:12px;color:#aaa;font-style:italic">No registered party affiliations.</div>';
     const teamRoleHTML = adv.teamRole ? `<div style="margin-top:8px"><div class="ab-category">Role in Team</div><div class="prose" style="margin-top:4px"><p>${adv.teamRole}</p></div></div>` : '';
     const miscHTML = `<div class="misc-grid">${Object.entries(adv.misc || {}).map(([k, v]) => `<div class="misc-item"><div class="misc-label">${k}</div><div class="misc-val">${v}</div></div>`).join('')}</div>`;
-    let rankClass = 'b-silver';
-    if (adv.rankLabel === 'Gold') rankClass = 'b-gold';
-    else if (adv.rankLabel === 'Diamond') rankClass = 'b-diamond';
-    else if (adv.rankLabel.includes('Diamond')) rankClass = 'b-diamond';
-    else if (adv.rankLabel === '~Diamond') rankClass = 'b-approx';
+    let rankClass = 'rank-approx';
+	if (adv.rankLabel === 'Copper') rankClass = 'rank-copper';
+	else if (adv.rankLabel === 'Iron') rankClass = 'rank-iron';
+	else if (adv.rankLabel === 'Silver') rankClass = 'rank-silver';
+	else if (adv.rankLabel === 'Gold') rankClass = 'rank-gold';
+	else if (adv.rankLabel === 'Diamond') rankClass = 'rank-diamond';
+	else if (adv.rankLabel === 'Mythril') rankClass = 'rank-mythril';
+	else if (adv.rankLabel.includes('Beyond Mythril') || adv.rankLabel === 'Unspecified (Beyond Mythril)') rankClass = 'rank-beyond-mythril';
+	else if (adv.rankLabel.includes('~')) rankClass = 'rank-approx';
     const affil = getAffilClassAndText(adv.category);
     
     panel.innerHTML = `
@@ -881,6 +895,7 @@ window.REGISTRY = (function() {
 		else if (adv.rankLabel === 'Gold') rankClass = 'rank-gold';
 		else if (adv.rankLabel === 'Diamond') rankClass = 'rank-diamond';
 		else if (adv.rankLabel === 'Mythril') rankClass = 'rank-mythril';
+		else if (adv.rankLabel.includes('Beyond Mythril') || adv.rankLabel === 'Unspecified (Beyond Mythril)') rankClass = 'rank-beyond-mythril';
 		else if (adv.rankLabel.includes('~')) rankClass = 'rank-approx';
 		
 		div.innerHTML = `
@@ -1013,7 +1028,14 @@ window.REGISTRY = (function() {
 
 // Load data
 const loadConfig = {
-  party: ['blue-constellation', 'the-rhyming-reapers', 'red-wings', 'village-vanguard', 'iron-reckoning'],
+  party: [
+	'blue-constellation',
+	'the-rhyming-reapers',
+	'red-wings',
+	'village-vanguard',
+	'iron-reckoning',
+	'arcane-weavers'
+  ],
   solo: [
 	'don-montajes',
 	'vincent',
@@ -1024,7 +1046,7 @@ const loadConfig = {
 	'elias-vance',
 	'greg'
   ],
-  unregistered: ['izgon', 'sven'],
+  unregistered: ['izgon', 'sven', 'yosion-mend'],
   civilian: [
 	'merrick-blackwood',
 	'garrick-stoneheart',
